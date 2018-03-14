@@ -1,3 +1,6 @@
+/*
+ * This source code file was modified by CopperLeaf Technologies.
+ */
 #region License
 /* 
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved. 
@@ -71,8 +74,8 @@ namespace Quartz.Impl
 	{
         [NonSerialized]
         private readonly IScheduler scheduler;
-        private readonly ITrigger trigger;
-        private readonly IJobDetail jobDetail;
+        private ITrigger trigger;  // was private readonly (CopperLeaf Technologies)
+        private IJobDetail jobDetail;  // was private readonly (CopperLeaf Technologies)
         private readonly JobDataMap jobDataMap;
         [NonSerialized]
         private readonly IJob job;
@@ -87,7 +90,7 @@ namespace Quartz.Impl
         private TimeSpan jobRunTime = TimeSpan.MinValue;
         private object result;
 
-        private readonly IDictionary<object, object> data = new Dictionary<object, object>();
+        private IDictionary<object, object> data = new Dictionary<object, object>();  // was private readonly (CopperLeaf Technologies)
 
         /// <summary>
         /// Create a JobExecutionContext with the given context data.
@@ -343,7 +346,10 @@ namespace Quartz.Impl
 		/// </param>
 		public virtual void Put(object key, object objectValue)
 		{
-			data[key] = objectValue;
+	        lock (data) // locking added by CopperLeaf Technologies
+	        {
+	            data[key] = objectValue;
+	        }
 		}
 
 		/// <summary> 
@@ -354,8 +360,11 @@ namespace Quartz.Impl
 		public virtual object Get(object key)
 		{
 		    object retValue;
-		    data.TryGetValue(key, out retValue);
-            return retValue;
+		    lock (data) // locking added by CopperLeaf Technologies
+		    {
+		        data.TryGetValue(key, out retValue);
+		    }
+		    return retValue;
 		}
 
         /// <summary>
@@ -365,5 +374,33 @@ namespace Quartz.Impl
         {
             get { return ((IOperableTrigger) trigger).FireInstanceId; }
         }
-	}
+
+        // --------------------------------------------------------------------------------------
+        // Begin code added by CopperLeaf Technologies ...
+
+        public IJobExecutionContext GetCopy()
+        {
+            var copy = MemberwiseClone() as JobExecutionContextImpl;
+
+            lock (data)
+            {
+                copy.data = new Dictionary<object, object>(data);
+            }
+
+            if (jobDetail != null)
+            {
+                copy.jobDetail = jobDetail.Clone() as IJobDetail;
+            }
+
+            if (trigger != null)
+            {
+                copy.trigger = trigger.Clone() as ITrigger;
+            }
+
+            return copy;
+        }
+
+        // ... end code added by CopperLeaf Technologies.
+        // --------------------------------------------------------------------------------------
+    }
 }

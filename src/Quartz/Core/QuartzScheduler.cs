@@ -1,3 +1,6 @@
+/*
+ * This source code file was modified by CopperLeaf Technologies.
+ */
 #region License
 
 /* 
@@ -2437,7 +2440,42 @@ namespace Quartz.Core
             {
                 lock (executingJobs)
                 {
-                    return new List<IJobExecutionContext>(executingJobs.Values).AsReadOnly();
+                    // --------------------------------------------------------------------------------------
+                    // Begin code added by CopperLeaf Technologies ...
+
+                    /*
+                     * Added this because with the 1.0.3 version of Quartz we hit an exception when
+                     * the Quartz server serialized the value returned by this property (see stack trace below).
+                     * Apparently something was writing to a Hashtable instance that was being concurrently
+                     * read by the serializer. To try to avoid this, we obtain a "shallow copy" of each
+                     * JobExecutionContext instance in executingJobs, where each shallow copy has a
+                     * copy of the "data" member of type Hashtable.
+                     *
+                     * System.InvalidOperationException: Collection was modified; enumeration operation may not execute. Server stack trace:
+                     * at System.Collections.Hashtable.GetObjectData(SerializationInfo info, StreamingContext context)
+                     * at System.Runtime.Serialization.Formatters.Binary.WriteObjectInfo.InitSerialize(Object obj, ISurrogateSelector surrogateSelector, StreamingContext context, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, ObjectWriter objectWriter, SerializationBinder binder)
+                     * at System.Runtime.Serialization.Formatters.Binary.ObjectWriter.Write(WriteObjectInfo objectInfo, NameInfo memberNameInfo, NameInfo typeNameInfo)
+                     * at System.Runtime.Serialization.Formatters.Binary.ObjectWriter.Serialize(Object graph, Header[] inHeaders, __BinaryWriter serWriter, Boolean fCheck)
+                     * at System.Runtime.Serialization.Formatters.Binary.BinaryFormatter.Serialize(Stream serializationStream, Object graph, Header[] headers, Boolean fCheck)
+                     * at System.Runtime.Remoting.Channels.BinaryServerFormatterSink.SerializeResponse(IServerResponseChannelSinkStack sinkStack, IMessage msg, ITransportHeaders& headers, Stream& stream)
+                     * at System.Runtime.Remoting.Channels.BinaryServerFormatterSink.ProcessMessage(IServerChannelSinkStack sinkStack, IMessage requestMsg, ITransportHeaders requestHeaders, Stream requestStream, IMessage& responseMsg, ITransportHeaders& responseHeaders, Stream& responseStream)
+                     * Exception rethrown at [0]:
+                     * at System.Runtime.Remoting.Proxies.RealProxy.HandleReturnMessage(IMessage reqMsg, IMessage retMsg)
+                     * at System.Runtime.Remoting.Proxies.RealProxy.PrivateInvoke(MessageData& msgData, Int32 type)
+                     * at Quartz.Simpl.IRemotableQuartzScheduler.get_CurrentlyExecutingJobs()
+                     * at Quartz.Impl.RemoteScheduler.GetCurrentlyExecutingJobs()
+                     * */
+
+                    var list = new List<IJobExecutionContext>(executingJobs.Count);
+                    foreach (var job in executingJobs.Values)
+                    {
+                        list.Add((job as JobExecutionContextImpl).GetCopy());
+                    }
+                    return list.AsReadOnly();
+
+                    // ... end code added by CopperLeaf Technologies.
+                    // --------------------------------------------------------------------------------------
+                    //return new List<IJobExecutionContext>(executingJobs.Values).AsReadOnly();
                 }
             }
         }

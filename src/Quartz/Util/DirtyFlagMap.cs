@@ -1,3 +1,6 @@
+/*
+ * This source code file was modified by CopperLeaf Technologies.
+ */
 #region License
 /* 
  * All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved. 
@@ -150,7 +153,13 @@ namespace Quartz.Util
         /// <value><c>true</c> if this instance is empty; otherwise, <c>false</c>.</value>
         public virtual bool IsEmpty
         {
-            get { return (map.Count == 0); }
+            get
+            {
+                lock (syncRoot) // locking added by CopperLeaf Technologies
+                {
+                    return (map.Count == 0);
+                }
+            }
         }
 
         #region ICloneable Members
@@ -167,7 +176,10 @@ namespace Quartz.Util
             try
             {
                 copy = (DirtyFlagMap<TKey, TValue>) MemberwiseClone();
-                copy.map = new Dictionary<TKey, TValue>(map);
+                lock (syncRoot) // locking added by CopperLeaf Technologies
+                {
+                    copy.map = new Dictionary<TKey, TValue>(map);
+                }
             }
             catch (Exception)
             {
@@ -183,7 +195,10 @@ namespace Quartz.Util
 
         public bool TryGetValue(TKey key, out TValue value)
         {
-            return map.TryGetValue(key, out value);
+            lock (syncRoot) // locking added by CopperLeaf Technologies
+            {
+                return map.TryGetValue(key, out value);
+            }
         }
 
         /// <summary>
@@ -192,7 +207,10 @@ namespace Quartz.Util
         /// <param name="key">The key.</param>
         public virtual TValue Get(TKey key)
         {
-            return this[key];
+            lock (syncRoot) // locking added by CopperLeaf Technologies
+            {
+                return this[key];
+            }
         }
 
         /// <summary>
@@ -203,12 +221,18 @@ namespace Quartz.Util
             get 
             {
                 TValue temp;
-                map.TryGetValue(key, out temp);
+                lock (syncRoot) // locking added by CopperLeaf Technologies
+                {
+                    map.TryGetValue(key, out temp);
+                }
                 return temp;
             }
             set
             {
-                map[key] = value;
+                lock (syncRoot) // locking added by CopperLeaf Technologies
+                {
+                    map[key] = value;
+                }
                 dirty = true;
             }
         }
@@ -225,17 +249,35 @@ namespace Quartz.Util
         /// <value></value>
         public virtual int Count
         {
-            get { return map.Count; }
+            get
+            {
+                lock (syncRoot) // locking added by CopperLeaf Technologies
+                {
+                    return map.Count;
+                }
+            }
         }
 
         ICollection IDictionary.Keys
         {
-            get { return map.Keys; }
+            get
+            {
+                lock (syncRoot) // locking added by CopperLeaf Technologies
+                {
+                    return map.Keys;
+                }
+            }
         }
 
         ICollection IDictionary.Values
         {
-            get { return map.Values; }
+            get
+            {
+                lock (syncRoot) // locking added by CopperLeaf Technologies
+                {
+                    return map.Values;
+                }
+            }
         }
 
         /// <summary>
@@ -244,7 +286,13 @@ namespace Quartz.Util
         /// <value></value>
         public virtual ICollection<TValue> Values
         {
-            get { return map.Values; }
+            get
+            {
+                lock (syncRoot) // locking added by CopperLeaf Technologies
+                {
+                    return map.Values;
+                }
+            }
         }
 
         public void Add(KeyValuePair<TKey, TValue> item)
@@ -254,7 +302,10 @@ namespace Quartz.Util
 
         public bool Contains(object key)
         {
-            return ((IDictionary) map).Contains(key);
+            lock (syncRoot) // locking added by CopperLeaf Technologies
+            {
+                return ((IDictionary) map).Contains(key);
+            }
         }
 
         public void Add(object key, object value)
@@ -270,17 +321,23 @@ namespace Quartz.Util
         /// </exception>
         public virtual void Clear()
         {
-            if (map.Count != 0)
+            lock (syncRoot) // locking added by CopperLeaf Technologies
             {
-                dirty = true;
-            }
+                if (map.Count != 0)
+                {
+                    dirty = true;
+                }
 
-            map.Clear();
+                map.Clear();
+            }
         }
 
         IDictionaryEnumerator IDictionary.GetEnumerator()
         {
-            return ((IDictionary) map).GetEnumerator();
+            lock (syncRoot) // locking added by CopperLeaf Technologies
+            {
+                return ((IDictionary) map).GetEnumerator();
+            }
         }
 
         public void Remove(object key)
@@ -301,7 +358,10 @@ namespace Quartz.Util
 
         public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
-            ((ICollection<KeyValuePair<TKey, TValue>>) map).CopyTo(array, arrayIndex);
+            lock (syncRoot) // locking added by CopperLeaf Technologies
+            {
+                ((ICollection<KeyValuePair<TKey, TValue>>) map).CopyTo(array, arrayIndex);
+            }
         }
 
         /// <summary>
@@ -315,7 +375,10 @@ namespace Quartz.Util
         /// 	<paramref name="key "/>is <see langword="null"/>.</exception>
         public virtual bool ContainsKey(TKey key)
         {
-            return map.ContainsKey(key);
+            lock (syncRoot) // locking added by CopperLeaf Technologies
+            {
+                return map.ContainsKey(key);
+            }
         }
 
         /// <summary>
@@ -332,7 +395,11 @@ namespace Quartz.Util
         /// </exception>
         public virtual bool Remove(TKey key)
         {
-            bool remove = map.Remove(key);
+            bool remove;
+            lock (syncRoot) // locking added by CopperLeaf Technologies
+            {
+                remove = map.Remove(key);
+            }
             dirty |= remove;
             return remove;
         }
@@ -346,7 +413,10 @@ namespace Quartz.Util
         /// </returns>
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
-            return map.GetEnumerator();
+            lock (syncRoot) // locking added by CopperLeaf Technologies
+            {
+                return map.GetEnumerator();
+            }
         }
 
         /// <summary>
@@ -365,7 +435,10 @@ namespace Quartz.Util
         /// </exception>
         public virtual void Add(TKey key, TValue value)
         {
-            map.Add(key, value);
+            lock (syncRoot) // locking added by CopperLeaf Technologies
+            {
+                map.Add(key, value);
+            }
             dirty = true;
         }
 
@@ -391,19 +464,33 @@ namespace Quartz.Util
         /// <exception cref="T:System.InvalidCastException">The type of the source <see cref="T:System.Collections.ICollection"/> cannot be cast automatically to the type of the destination <paramref name="array"/>.</exception>
         public virtual void CopyTo(Array array, int index)
         {
-            TKey[] keys = new TKey[Count];
-            TValue[] values = new TValue[Count];
-            
-            Keys.CopyTo(keys, index);
-            Values.CopyTo(values, index);
-            
-            for (int i = index; i < Count; i++)
+            lock (syncRoot) // locking added by CopperLeaf Technologies
             {
-                if (!Equals(keys[i], default(TKey)) || !Equals(values[i], default(TValue)))
+                // CopperLeaf Technologies: Replaced the commented-out code below
+                // with the following foreach loop:
+                int numberCopied = 0;
+                foreach (var entry in map)
                 {
-                    array.SetValue(new DictionaryEntry(keys[i], values[i]), i);
+                    if (!Equals(entry.Key, default(TKey)) || !Equals(entry.Value, default(TValue)))
+                    {
+                        array.SetValue(new DictionaryEntry(entry.Key, entry.Value), index + numberCopied);
+                        numberCopied++;
+                    }
                 }
             }
+            //TKey[] keys = new TKey[Count];
+            //TValue[] values = new TValue[Count];
+            
+            //Keys.CopyTo(keys, index);
+            //Values.CopyTo(values, index);
+            
+            //for (int i = index; i < Count; i++)
+            //{
+            //    if (!Equals(keys[i], default(TKey)) || !Equals(values[i], default(TValue)))
+            //    {
+            //        array.SetValue(new DictionaryEntry(keys[i], values[i]), i);
+            //    }
+            //}
         }
 
         /// <summary>
@@ -412,7 +499,13 @@ namespace Quartz.Util
         /// <value></value>
         public virtual ICollection<TKey> Keys
         {
-            get { return map.Keys; }
+            get
+            {
+                lock (syncRoot) // locking added by CopperLeaf Technologies
+                {
+                    return map.Keys;
+                }
+            }
         }
 
         /// <summary>
@@ -475,7 +568,10 @@ namespace Quartz.Util
         /// </returns>
         public virtual bool ContainsValue(TValue obj)
         {
-            return map.ContainsValue(obj);
+            lock (syncRoot) // locking added by CopperLeaf Technologies
+            {
+                return map.ContainsValue(obj);
+            }
         }
 
         /// <summary>
@@ -484,7 +580,10 @@ namespace Quartz.Util
         /// <returns></returns>
         public virtual Dictionary<TKey, TValue>.Enumerator EntrySet()
         {
-            return map.GetEnumerator();
+            lock (syncRoot) // locking added by CopperLeaf Technologies
+            {
+                return map.GetEnumerator();
+            }
         }
 
         /// <summary>
@@ -540,7 +639,12 @@ namespace Quartz.Util
         /// </returns>
         public override int GetHashCode()
         {
-            return map.GetHashCode() ^ dirty.GetHashCode();
+            int mapHashCode;
+            lock (syncRoot) // locking added by CopperLeaf Technologies
+            {
+                mapHashCode = map.GetHashCode();
+            }
+            return mapHashCode ^ dirty.GetHashCode();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -554,7 +658,10 @@ namespace Quartz.Util
         /// <returns></returns>
         public virtual ICollection<TKey> KeySet()
         {
-            return new Collection.HashSet<TKey>(map.Keys);
+            lock (syncRoot) // locking added by CopperLeaf Technologies
+            {
+                return new Collection.HashSet<TKey>(map.Keys);
+            }
         }
 
         /// <summary>
@@ -567,8 +674,11 @@ namespace Quartz.Util
         {
             dirty = true;
             TValue tempObject;
-            map.TryGetValue(key, out tempObject);
-            map[key] = val;
+            lock (syncRoot) // locking added by CopperLeaf Technologies
+            {
+                map.TryGetValue(key, out tempObject);
+                map[key] = val;
+            }
             return tempObject;
         }
 
@@ -578,16 +688,29 @@ namespace Quartz.Util
         /// <param name="t">The t.</param>
         public virtual void PutAll(IDictionary<TKey, TValue> t)
         {
-            if (t != null && t.Count > 0)
+            if (t != null)
             {
-                dirty = true;
-
-                List<TKey> keys = new List<TKey>(t.Keys);
-                List<TValue> values = new List<TValue>(t.Values);
-
-                for (int i = 0; i < keys.Count; i++)
+                lock (t) // locking added by CopperLeaf Technologies
                 {
-                    this[keys[i]] = values[i];
+                    if (t.Count > 0)
+                    {
+                        dirty = true;
+
+                        // CopperLeaf Technologies: Replaced the commented-out code below
+                        // with the following foreach loop:
+                        foreach (var entry in t)
+                        {
+                            this[entry.Key] = entry.Value;
+                        }
+
+                        //List<TKey> keys = new List<TKey>(t.Keys);
+                        //List<TValue> values = new List<TValue>(t.Values);
+
+                        //for (int i = 0; i < keys.Count; i++)
+                        //{
+                        //    this[keys[i]] = values[i];
+                        //}
+                    }
                 }
             }
         }
